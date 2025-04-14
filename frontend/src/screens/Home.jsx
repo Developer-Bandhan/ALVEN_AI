@@ -29,9 +29,9 @@ const Home = () => {
       toast.success('Project created successfully');
     } catch (error) {
       console.error(error)
-      if (error.response.data.error == 'Unauthorized User') {
-        navigate('/login')
-      }
+      // if (error.response?.data?.error == 'Unauthorized User') {
+      //   navigate('/login')
+      // }
       toast.error(error.response.data.error || error.response.data.message || 'server error');
     } finally {
       setLoading(false)

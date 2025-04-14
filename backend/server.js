@@ -1,9 +1,23 @@
 import 'dotenv/config';
 import http from 'http';
 import app from './app.js';
+import { Server } from 'socket.io';
+
+const port = process.env.PORT || 8000;
+
+
 
 const server = http.createServer(app);
-const port = process.env.PORT || 8000;
+const io = new Server(server);
+
+
+io.on('connection', socket => {
+
+    console.log('a user connected.')
+
+    socket.on('event', data => { /* … */ });
+    socket.on('disconnect', () => { /* … */ });
+});
 
 
 

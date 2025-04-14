@@ -8,7 +8,7 @@ import { FaVideo } from "react-icons/fa6";
 import { RiSendPlaneFill } from "react-icons/ri";
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 import logo from '../assets/ALVEN_logo.png';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from '../config/axios';
 import { gsap } from 'gsap';
 
@@ -22,6 +22,7 @@ const getRandomColor = () => {
 };
 
 const Projects = () => {
+  const navigate = useNavigate()
   const [showAll, setShowAll] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
@@ -71,6 +72,9 @@ const Projects = () => {
         setAllUsers(res.data.users);
       } catch (error) {
         console.error(error);
+        if (error.response.data.error == 'Unauthorized User') {
+          navigate('/login')
+        }
       }
     };
 
