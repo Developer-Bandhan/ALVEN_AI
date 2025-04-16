@@ -5,6 +5,7 @@ import Signup from '../screens/Signup'
 import Login from '../screens/Login'
 import ResetPassword from '../components/ResetPassword'
 import Projects from '../screens/Projects'
+import UserAuth from '../auth/UserAuth'
 
 const AppRouter = () => {
     return (
@@ -14,8 +15,7 @@ const AppRouter = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/" element={<Home />} />
-                <Route path="/all-projects" element={<Projects />} />
-                
+                <Route path="/all-projects" element={<UserAuth><Projects /></UserAuth>} />
             </Routes>
         </BrowserRouter>
     )
