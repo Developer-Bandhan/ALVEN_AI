@@ -1,32 +1,60 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { FaVideo } from "react-icons/fa6";
 import { RiSendPlaneFill } from "react-icons/ri";
 import { FaPlus } from "react-icons/fa6";
 import { IoPersonSharp } from "react-icons/io5";
 import { receiveMessage, sendMessage } from '../config/socket';
 import { UserContext } from '../context/userContext';
+import axios from 'axios';
 
 const ProjectChat = ({ selectedProject, setShowModal }) => {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
+    const [users, setUsers] = useState({});
+    const [isLoadingUsers, setIsLoadingUsers] = useState(false);
     const { user } = useContext(UserContext);
 
-    // Filter messages for the current project
     const currentProjectMessages = messages.filter(
         msg => msg.projectId === selectedProject.project?._id
     );
 
-    function send() {
-        if (!user || !user._id || !selectedProject.project?._id) {
-            console.error("Missing required data");
-            return;
+    const fetchUsers = useCallback(async () => {
+        setIsLoadingUsers(true);
+        try {
+            const res = await axios.get('/users/all-users');
+            if (res.data?.users) {
+                const usersData = {};
+                res.data.users.forEach(u => {
+                    usersData[u._id] = {
+                        username: u.username,
+                        avatar: u.avatar || 'https://randomuser.me/api/portraits/men/32.jpg'
+                    };
+                });
+                setUsers(prev => ({ ...prev, ...usersData }));
+            }
+        } catch (error) {
+            console.error("Error fetching users:", error);
+        } finally {
+            setIsLoadingUsers(false);
         }
+    }, []);
 
-        if (!message.trim()) return;
+    useEffect(() => {
+        if (selectedProject.project?._id) {
+            fetchUsers();
+        }
+    }, [selectedProject.project?._id, fetchUsers]);
+
+    const send = useCallback(() => {
+        if (!user?._id || !selectedProject.project?._id || !message.trim()) return;
 
         const newMessage = {
             text: message,
-            sender: user._id,
+            sender: {
+                _id: user._id,
+                username: user.username,
+                avatar: user.avatar
+            },
             projectId: selectedProject.project._id,
             timestamp: Date.now(),
             isMe: true
@@ -36,12 +64,15 @@ const ProjectChat = ({ selectedProject, setShowModal }) => {
 
         sendMessage('project-message', {
             message: message,
-            sender: user._id,
+            sender: {
+                _id: user._id,
+                username: user.username
+            },
             projectId: selectedProject.project._id
         });
 
         setMessage("");
-    }
+    }, [message, selectedProject.project?._id, user]);
 
     const handleKeyPress = (e) => {
         if (e.key === 'Enter') {
@@ -50,38 +81,48 @@ const ProjectChat = ({ selectedProject, setShowModal }) => {
     };
 
     useEffect(() => {
-        // Fetch initial messages for this project
-        const fetchMessages = async () => {
-            try {
-                // Replace with your actual API call
-                // const response = await getMessagesForProject(selectedProject.project._id);
-                // setMessages(response.data);
-            } catch (error) {
-                console.error("Error fetching messages:", error);
+        const handleIncomingMessage = (data) => {
+            if (data.projectId === selectedProject.project?._id) {
+                const isMe = data.sender._id === user?._id;
+                const isAi = data.sender._id === 'ai-bot';
+                
+                // Update users data if new user
+                if (!isAi && !isMe && !users[data.sender._id]) {
+                    fetchUsers();
+                }
+
+                setMessages(prev => [
+                    ...prev,
+                    {
+                        text: data.message,
+                        sender: data.sender,
+                        projectId: data.projectId,
+                        timestamp: data.timestamp,
+                        isMe,
+                        isAi
+                    }
+                ]);
             }
         };
 
-        if (selectedProject.project?._id) {
-            fetchMessages();
-        }
-
-        // Socket listener for incoming messages
-        receiveMessage('project-message', (data) => {
-            if (data.projectId === selectedProject.project?._id) {
-                setMessages(prev => [...prev, {
-                    text: data.message,
-                    sender: data.sender,
-                    projectId: data.projectId,
-                    timestamp: Date.now(),
-                    isMe: data.sender === user?._id
-                }]);
-            }
-        });
+        receiveMessage('project-message', handleIncomingMessage);
 
         return () => {
             // Cleanup if needed
         };
-    }, [selectedProject.project?._id, user?._id]);
+    }, [selectedProject.project?._id, user?._id, users, fetchUsers]);
+
+    const getAvatar = (msg) => {
+        if (msg.isAi) return 'https://cdn-icons-png.flaticon.com/512/4712/4712035.png';
+        if (msg.isMe) return user?.avatar || 'https://img.freepik.com/free-vector/smiling-young-man-illustration_1308-174669.jpg';
+        return users[msg.sender._id]?.avatar || 'https://randomuser.me/api/portraits/men/32.jpg';
+    };
+
+    const getSenderName = (msg) => {
+        if (msg.isMe) return 'You';
+        if (msg.isAi) return 'AI Assistant';
+        return users[msg.sender._id]?.username || msg.sender.username || 'Team Member';
+    };
 
     return (
         <div className='mid md:ml-5 bg-[#0F172B] md:flex flex-col w-full h-full md:w-[60%] rounded-3xl p-5'>
@@ -89,15 +130,18 @@ const ProjectChat = ({ selectedProject, setShowModal }) => {
                 {selectedProject.project?.name || "Project Name"}
                 <div className='flex items-center gap-2'>
                     <button
-                        className=' text-[#16A34A] font-light px-3 py-2 rounded-full border border-[#16A34A]'
+                        className='text-[#16A34A] font-light px-3 py-2 rounded-full border border-[#16A34A]'
                         onClick={() => setShowModal(true)}
                     >
                         <span className='flex items-center'>
-                            <span className='text-sm'> <FaPlus /></span>
+                            <span className='text-sm'><FaPlus /></span>
                             <IoPersonSharp />
                         </span>
                     </button>
-                    <button className=' text-[#16A34A] px-3 py-2 rounded-full border border-[#16A34A]'>
+                    <button 
+                        className='text-[#16A34A] px-3 py-2 rounded-full border border-[#16A34A]' 
+                        onClick={() => {}}
+                    >
                         <FaVideo />
                     </button>
                 </div>
@@ -112,25 +156,30 @@ const ProjectChat = ({ selectedProject, setShowModal }) => {
                         {!msg.isMe && (
                             <img
                                 className='w-8 h-8 rounded-full'
-                                src="https://randomuser.me/api/portraits/men/32.jpg"
-                                alt="User"
+                                src={getAvatar(msg)}
+                                alt={getSenderName(msg)}
                             />
                         )}
-                        <div className={`${msg.isMe ? 'bg-[#2E65E4]' : 'bg-[#1E2A47]'} text-white px-2 py-1 rounded-lg max-w-xs`}>
-                            <span className='text-sm'>
-                                {msg.isMe ? 'You' : 'John Doe'}
-                            </span>
+                        <div className={`${
+                            msg.isMe ? 'bg-[#2E65E4]' : 
+                            msg.isAi ? 'bg-[#3A3A3A]' : 
+                            'bg-[#1E2A47]'
+                        } text-white px-2 py-1 rounded-lg max-w-xs`}>
+                            <span className='text-sm'>{getSenderName(msg)}</span>
                             <div className='flex gap-8'>
-                                <p className=''>{msg.text}</p>
+                                <p>{msg.text}</p>
                                 <p className='text-xs text-gray-300 mt-2'>
-                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(msg.timestamp).toLocaleTimeString([], { 
+                                        hour: '2-digit', 
+                                        minute: '2-digit' 
+                                    })}
                                 </p>
                             </div>
                         </div>
                         {msg.isMe && (
                             <img
                                 className='w-8 h-8 rounded-full'
-                                src="https://img.freepik.com/free-vector/smiling-young-man-illustration_1308-174669.jpg"
+                                src={getAvatar(msg)}
                                 alt="Me"
                             />
                         )}

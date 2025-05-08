@@ -5,6 +5,7 @@ import { UserProvider } from "./context/userContext"
 function App() {
 
   return (
+
     <UserProvider>
       <Toaster position="top-right" reverseOrder={false} />
       <AppRouter />
