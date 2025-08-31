@@ -4,7 +4,9 @@ import gsap from 'gsap';
 import axios from '../config/axios';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
-import { UserContext } from '../context/userContext';
+import { useDispatch } from 'react-redux';
+import { setAuthUser } from '../redux/authSlice';
+// import { UserContext } from '../context/userContext';
 
 const Signup = () => {
   const [username, setUsername] = useState('');
@@ -14,16 +16,16 @@ const Signup = () => {
   const [otpLoading, setOTPLoading] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [otpExpiry, setOtpExpiry] = useState(null); // Store OTP expiry time
-  const [timer, setTimer] = useState(60); // Timer in seconds
+  const [otpExpiry, setOtpExpiry] = useState(null);
+  const [timer, setTimer] = useState(60);
   const otpInputRefs = useRef([]);
   const otpModalRef = useRef(null);
   const navigate = useNavigate();
-  const { setUser } = useContext(UserContext)
+  // const { setUser } = useContext(UserContext)
+  const dispatch = useDispatch();
 
   const handleSignUp = async (e) => {
     e.preventDefault();
-
     try {
       setLoading(true);
       const res = await axios.post('/users/register', {
@@ -37,7 +39,6 @@ const Signup = () => {
       setTimer(60);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Some error occurred');
-      console.log(error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
@@ -48,7 +49,6 @@ const Signup = () => {
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Move to the next input field
     if (value && index < 5) {
       otpInputRefs.current[index + 1].focus();
     }
@@ -76,12 +76,15 @@ const Signup = () => {
       });
       toast.success('Registration successful');
       setShowOTPModal(false);
-      localStorage.setItem('token', res.data.token)
-      setUser(res.data.newUser);
+
+      dispatch(setAuthUser({
+        user: res.data.newUser,
+        token: res.data.token
+      }))
+
       navigate('/');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Some error occurred');
-      console.log(error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
@@ -96,13 +99,11 @@ const Signup = () => {
       setTimer(60);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to resend OTP');
-      console.log(error.response?.data || error.message);
     } finally {
       setOTPLoading(false);
     }
   };
 
-  // Timer countdown
   useEffect(() => {
     if (timer > 0 && showOTPModal) {
       const interval = setInterval(() => {
@@ -112,7 +113,6 @@ const Signup = () => {
     }
   }, [timer, showOTPModal]);
 
-  // GSAP animation for OTP modal
   useEffect(() => {
     if (showOTPModal) {
       gsap.from(otpModalRef.current, {
@@ -124,7 +124,6 @@ const Signup = () => {
     }
   }, [showOTPModal]);
 
-  // Close modal when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (otpModalRef.current && !otpModalRef.current.contains(event.target)) {
@@ -143,42 +142,42 @@ const Signup = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4">
-      <div className="bg-gray-800 text-white p-8 rounded-lg shadow-lg w-full max-w-md">
+      <div className="bg-gray-800 text-white p-6 md:p-8 rounded-lg shadow-lg w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center">Sign Up to ALVEN</h2>
         <form onSubmit={handleSignUp}>
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Username</label>
+            <label className="block text-sm font-medium mb-2">Username</label>
             <input
               onChange={(e) => setUsername(e.target.value)}
               type="text"
-              className="w-full px-3 py-2 rounded-md bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm focus:outline-none"
+              className="w-full px-4 py-3 rounded-md bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="Enter your username"
               required
             />
           </div>
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Email</label>
+            <label className="block text-sm font-medium mb-2">Email</label>
             <input
               onChange={(e) => setEmail(e.target.value)}
               type="email"
-              className="w-full px-3 py-2 rounded-md bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm focus:outline-none"
+              className="w-full px-4 py-3 rounded-md bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="Enter your email"
               required
             />
           </div>
           <div className="mb-6">
-            <label className="block text-sm font-medium mb-1">Password</label>
+            <label className="block text-sm font-medium mb-2">Password</label>
             <input
               onChange={(e) => setPassword(e.target.value)}
               type="password"
-              className="w-full px-3 py-2 rounded-md bg-gray-700 border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm focus:outline-none"
+              className="w-full px-4 py-3 rounded-md bg-gray-700 border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="Enter your password"
               required
             />
           </div>
           <button
             type="submit"
-            className="w-full py-2 px-4 rounded-md font-semibold bg-indigo-600 hover:bg-indigo-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="w-full py-3 px-4 rounded-md font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors duration-300"
           >
             {loading ? <LoadingSpinner /> : 'Sign Up'}
           </button>
@@ -186,7 +185,7 @@ const Signup = () => {
         <div className="mt-6 text-center">
           <p className="text-sm">
             Already have an account?{' '}
-            <Link to="/login" className="font-semibold text-indigo-400 hover:text-indigo-300">
+            <Link to="/login" className="font-semibold text-indigo-400 hover:text-indigo-300 transition-colors duration-300">
               Login
             </Link>
           </p>
@@ -194,10 +193,10 @@ const Signup = () => {
       </div>
 
       {showOTPModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
           <div
             ref={otpModalRef}
-            className="bg-gray-800 w-full max-w-md rounded-t-lg p-8 pb-12"
+            className="bg-gray-800 w-full max-w-md rounded-t-lg p-6 md:p-8 pb-12"
           >
             <h2 className="text-2xl text-white font-bold mb-6 text-center">OTP Verification</h2>
             <form onSubmit={handleOTPSubmit}>
@@ -216,13 +215,13 @@ const Signup = () => {
                       }
                     }}
                     ref={(el) => (otpInputRefs.current[index] = el)}
-                    className="w-12 h-12 text-center text-2xl bg-gray-700 text-white border border-gray-600 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm focus:outline-none"
+                    className="w-12 h-12 text-center text-2xl bg-gray-700 text-white border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                   />
                 ))}
               </div>
               <button
                 type="submit"
-                className="w-full py-2 px-4 rounded-md font-semibold bg-indigo-600 hover:bg-indigo-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                className="w-full py-3 px-4 rounded-md font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors duration-300"
               >
                 {loading ? <LoadingSpinner /> : 'Verify OTP'}
               </button>
@@ -234,7 +233,7 @@ const Signup = () => {
               {timer === 0 && (
                 <button
                   onClick={handleResendOTP}
-                  className="text-indigo-400 hover:text-indigo-300 font-semibold"
+                  className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors duration-300"
                 >
                   {otpLoading ? 'Processing...' : 'Resend OTP'}
                 </button>

@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { IoIosArrowForward, IoIosArrowUp } from "react-icons/io";
 import { FaProjectDiagram } from "react-icons/fa";
-import { IoCall } from "react-icons/io5";
 import { IoPersonSharp } from "react-icons/io5";
 import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 import logo from '../assets/ALVEN_logo.png';
@@ -10,6 +9,7 @@ import axios from '../config/axios';
 import { gsap } from 'gsap';
 import ProjectChat from '../components/ProjectChat';
 import { initializeSocket } from '../config/socket';
+import FolderSection from '../components/folderSection';
 
 const getRandomColor = () => {
   const letters = '0123456789ABCDEF';
@@ -35,6 +35,8 @@ const Projects = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const collaboratorsRef = useRef(null);
   const sidebarref = useRef(null);
+
+  
 
   const toggleShowAll = () => {
     setShowAll(!showAll);
@@ -286,7 +288,9 @@ const Projects = () => {
           </div>
         )}
 
-        <div className='right hidden md:block ml-5 bg-[#0F172B] h-full w-[20%] rounded-3xl'></div>
+        <section className='right overflow-hidden hidden md:block ml-5 bg-[#0F172B] h-full w-[20%] rounded-3xl'>
+          <FolderSection/>
+        </section>
       </div>
 
       {showModal && (

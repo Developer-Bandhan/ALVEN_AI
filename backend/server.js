@@ -62,8 +62,8 @@ io.on('connection', socket => {
             });
 
             // Check for AI mention
-            if(message.includes('@ai')) {
-                const prompt = message.replace('@ai', '').trim();
+            if(message.includes('@al')) {
+                const prompt = message.replace('@al', '').trim();
                 
                 if(prompt) {
                     console.log(`Processing AI request: ${prompt}`);
